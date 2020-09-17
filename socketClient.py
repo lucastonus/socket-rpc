@@ -19,5 +19,8 @@ class SocketClient():
 			print(f'\nErro ao conectar: {msg}\n')
 			self.conection = None
 
-	def getConn(self):
+	def getConnection(self):
 		return self.conection
+
+	def read(self) -> str:
+		return self.conection.recv(4096).decode('utf-8')

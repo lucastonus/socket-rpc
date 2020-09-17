@@ -1,39 +1,84 @@
 # coding: utf-
 
 import socket
+import json
+import threading
+from db import DB
 
 class SocketServer:
 
-	conection = None
+	dbConection = None
 
 	def __init__(self):
 		host, port = input('Digite o servidor e a porta [127.0.0.1:8888]: ').split(':')
 		self.init(host, port)
 
 	def init(self, host: str, port: str):
-		self.conection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+		self.connection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 		try:
-			self.conection.bind((host, int(port)))
-			self.conection.listen(5)
+			print('\nServidor iniciado, aguardando conexões.')
+			self.connection.bind((host, int(port)))
+			self.connection.listen(5)
 			self.loop()
 		except socket.error as msg:
 			print(f'\nErro ao iniciar servidor: {msg}\n')
-			self.conection = None
+			self.connection = None
 
 	def loop(self):
-		print('Servidor iniciado, aguardando conexões.')
-
 		while True:
-			client, address = self.conection.accept()
-			print(f'Conexão estabelecida com {address}')
+			try:
+				client, address = self.connection.accept()
+				threading._start_new_thread(self.newClient, (client, address))
+			except KeyboardInterrupt:
+				break
+		self.connection.close()
 
-			data = client.recv(1024)
-			data = data.decode('utf-8')
+	def newClient(self, client, connection):
+		print(f'Conexão estabelecida: {connection}')
+		while True:
+			data = client.recv(4096).decode('utf-8')
+			if (data):
+				data = json.loads(data)
+				result = self.execute(data)
+				client.sendall(bytes(str(result), 'utf-8'))
+			else:
+				break
 
-			# client.send(bytes('message', 'utf-8'))
+		print(f'Conexão encerrada: {connection}.')
+		client.close()
 
-			client.close()
+	def execute(self, data) -> str:
+		if (data['action'] == 'createBook'):
+			code = int(data['code'])
+			title = str(data['title'])
+			return self.createBook(code, title)
+		elif (data['action'] == 'searchBook'):
+			author = str(data['author'])
+			title = str(data['title'])
+			return self.searchBook(author, title)
+		elif (data['action'] == 'searchByYearAndEdition'):
+			year = int(data['year'])
+			edition = str(data['edition'])
+			return self.searchByYearAndEdition(year, edition)
+		elif (data['action'] == 'deleteBook'):
+			title = data['title']
+			return self.deleteBook(title)
+		elif (data['action'] == 'updateBook'):
+			return self.updateBook()
 
-if __name__ == '__main__':
-	SocketServer()
+	def createBook(self, code: int, title: str) -> str:
+		query = ''' INSERT INTO livros VALUES (%s, %s) '''
+		return DB().query(query, (code, title))
+
+	def searchBook(self, author: str, title: str) -> str:
+		return ''
+
+	def searchByYearAndEdition(self, year: int, edition: str) -> str:
+		return ''
+
+	def deleteBook(self, title: str) -> str:
+		return ''
+
+	def updateBook(self) -> str: # Rever funcionamento
+		return ''
