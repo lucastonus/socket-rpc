@@ -9,6 +9,9 @@ class DB:
 	connection = None
 	cursor = None
 
+	def __init__(self):
+		self.connect()
+
 	def connect(self):
 		try:
 			self.connection = pgSQL.connect(user = 'postgres', password = '', host = '127.0.1.1', port = '5432', database = 'livros')
@@ -22,19 +25,20 @@ class DB:
 			self.connection = None
 			self.cursor = None
 
-	def query(self, query: str, data: tuple, fetchData: bool = False):
-		result = {'error': ''}
-
-		self.connect()
+	def query(self, fetchData: bool = False):
+		result = {
+			'rowCount': '0',
+			'error': '',
+			'data': '[]'
+		}
 
 		if (self.connection):
 			try:
-				self.cursor.execute(query, data)
 				if (fetchData):
-					result['data'] = self.cursor.fetchall()
+					result['data'] = str(self.cursor.fetchall())
 				else:
 					self.connection.commit()
-					result['rowCount'] = str(self.cursor.rowcount)
+				result['rowCount'] = str(self.cursor.rowcount)
 			except (Exception, pgSQL.Error) as error:
 				result['error'] = str(error)
 
@@ -47,3 +51,9 @@ class DB:
 		if (self.connection):
 			self.cursor.close()
 			self.connection.close()
+
+	def execute(self, query: str, data: tuple):
+		try:
+			self.cursor.execute(query, data)
+		except (Exception, pgSQL.Error) as error:
+				print(f'Erro: {error}')

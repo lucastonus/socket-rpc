@@ -7,8 +7,11 @@ class SocketClient():
 	conection = None
 
 	def __init__(self):
-		host, port = input('Digite o servidor e a porta [127.0.0.1:8888]: ').split(':')
-		self.init(host, port)
+		try:
+			host, port = input('Digite o servidor e a porta [127.0.0.1:8888]: ').split(':')
+			self.init(host, port)
+		except:
+			print('Formato inválido utilize [127.0.0.1:8888]')
 
 	def init(self, host: str, port: str):
 		self.conection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

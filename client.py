@@ -1,6 +1,7 @@
 # coding: utf-
 
 import json
+import ast
 
 class Client:
 
@@ -28,14 +29,16 @@ class Client:
 		option = -1
 
 		while (option != 0):
-			print('\n-- SISTEMA DE CONTROLE DE LIVROS --')
-			print('1 - Criar livro')
-			print('2 - Consultar livro')
-			print('3 - Consultar por ano e número da edição')
-			print('4 - Remover livro')
-			print('5 - Alterar livro')
-			print('0 - Sair')
-			print('-------------------------------------')
+			print('\n┌──────────────────────────────────────────┐')
+			print('│      SISTEMA DE CONTROLE DE LIVROS       │')
+			print('├───┬──────────────────────────────────────┤')
+			print('│ 1 │ Criar livro                          │')
+			print('│ 2 │ Consultar por autor e título         │')
+			print('│ 3 │ Consultar por ano e número da edição │')
+			print('│ 4 │ Remover livro                        │')
+			print('│ 5 │ Alterar número e ano da edição       │')
+			print('│ 0 │ Sair                                 │')
+			print('└───┴──────────────────────────────────────┘')
 
 			option = self.menuOption()
 
@@ -69,53 +72,61 @@ class Client:
 		if (option == 1):
 			data = self.createBook()
 		elif (option == 2):
-			pass
-			# data = self.searchBook()
+			data = self.searchBook()
 		elif (option == 3):
-			pass
-			# data = self.searchByYearAndEdition()
+			data = self.searchByYearAndEdition()
 		elif (option == 4):
-			pass
-			# data = self.deleteBook()
+			data = self.deleteBook()
 		elif (option == 5):
-			pass
-			# data = self.updateBook()
+			data = self.updateBook()
 
 		self.clientConnection.getConnection().send(bytes(data, 'utf-8'))
 		response = json.loads(self.clientConnection.read())
 
+		print(f'\nLinhas afetadas: {response["rowCount"]}')
+		for row in ast.literal_eval(response['data']):
+			print(f'Código: {row[0].strip()}, Título: {row[1].strip()}')
 		if (response['error']):
 			print(f'Erro: {response["error"]}')
-		else:
-			print('Sucesso na operação')
 
 	def createBook(self):
 		return json.dumps({
 			'action': 'createBook',
-			'code': self.inputInt('Digite o código do livro: '),
-			'title': input('Digite o título do livro: ')
+			'code': str(self.inputInt('Digite o código do livro: ')),
+			'title': input('Digite o título do livro: '),
+			'number': str(self.inputInt('Digite o número da edição: ')),
+			'year': str(self.inputInt('Digite o ano da edição: ')),
+			'authorCode': str(self.inputInt('Digite o código de um autor existente: '))
 		})
 
 	def searchBook(self):
 		return json.dumps({
 			'action': 'searchBook',
-			'author': self.inputInt('Digite o nome do autor do livro: '),
+			'author': input('Digite o nome do autor do livro: '),
 			'title': input('Digite o título do livro: ')
 		})
 
 	def searchByYearAndEdition(self):
-		pass
-		# year: int, edition: str
-		#return json.dumps(data)
+		return json.dumps({
+			'action': 'searchByYearAndEdition',
+			'year': str(self.inputInt('Digite o ano da edição: ')),
+			'edition': str(self.inputInt('Digite o número da edição: '))
+		})
 
 	def deleteBook(self):
-		pass
-		# title: str
-		#return json.dumps(data)
+		return json.dumps({
+			'action': 'deleteBook',
+			'code': str(self.inputInt('Digite o código do livro: '))
+		})
 
 	def updateBook(self):
-		pass
-		#return json.dumps(data)
+		return json.dumps({
+			'action': 'updateBook',
+			'author': input('Digite o nome do autor do livro: '),
+			'title': input('Digite o título do livro: '),
+			'number': str(self.inputInt('Digite o número da edição: ')),
+			'year': str(self.inputInt('Digite o ano da edição: '))
+		})
 
 if __name__ == '__main__':
 	Client('socket')

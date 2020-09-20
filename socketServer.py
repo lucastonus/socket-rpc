@@ -10,14 +10,17 @@ class SocketServer:
 	dbConection = None
 
 	def __init__(self):
-		host, port = input('Digite o servidor e a porta [127.0.0.1:8888]: ').split(':')
-		self.init(host, port)
+		try:
+			host, port = input('Digite o servidor e a porta [127.0.0.1:8888]: ').split(':')
+			self.init(host, port)
+		except:
+			print('Formato inválido utilize [127.0.0.1:8888]')
 
 	def init(self, host: str, port: str):
 		self.connection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 		try:
-			print('\nServidor iniciado, aguardando conexões.')
+			print('\nServidor iniciado, aguardando conexões...')
 			self.connection.bind((host, int(port)))
 			self.connection.listen(5)
 			self.loop()
@@ -45,40 +48,69 @@ class SocketServer:
 			else:
 				break
 
-		print(f'Conexão encerrada: {connection}.')
+		print(f'Conexão encerrada: {connection}')
 		client.close()
 
 	def execute(self, data) -> str:
 		if (data['action'] == 'createBook'):
 			code = int(data['code'])
 			title = str(data['title'])
-			return self.createBook(code, title)
+			number = int(data['number'])
+			year = int(data['year'])
+			authorCode = int(data['authorCode'])
+			return self.createBook(code, title, number, year, authorCode)
 		elif (data['action'] == 'searchBook'):
-			author = str(data['author'])
-			title = str(data['title'])
-			return self.searchBook(author, title)
+			title = '%' + str(data['title']) + '%'
+			author = '%' + str(data['author']) + '%'
+			return self.searchBook(title, author)
 		elif (data['action'] == 'searchByYearAndEdition'):
 			year = int(data['year'])
 			edition = str(data['edition'])
 			return self.searchByYearAndEdition(year, edition)
 		elif (data['action'] == 'deleteBook'):
-			title = data['title']
-			return self.deleteBook(title)
+			code = data['code']
+			return self.deleteBook(code)
 		elif (data['action'] == 'updateBook'):
-			return self.updateBook()
+			author = '%' + str(data['author']) + '%'
+			title = str(data['title'])
+			number = int(data['number'])
+			year = int(data['year'])
+			return self.updateBook(author, title, number, year)
 
-	def createBook(self, code: int, title: str) -> str:
-		query = ''' INSERT INTO livros VALUES (%s, %s) '''
-		return DB().query(query, (code, title))
+	def createBook(self, code: int, title: str, number: int, year: int, authorCode: int) -> str:
+		db = DB()
+		query = 'INSERT INTO livros VALUES (%s, %s)'
+		db.execute(query, (code, title))
+		query = 'INSERT INTO edicao VALUES (%s, %s, %s)'
+		db.execute(query, (code, number, year))
+		query = 'INSERT INTO livroautor VALUES(%s, %s)'
+		db.execute(query, (code, authorCode))
+		return db.query()
 
-	def searchBook(self, author: str, title: str) -> str:
-		return ''
+	def searchBook(self, title: str, author: str) -> str:
+		db = DB()
+		query = 'SELECT CAST(l.codigo AS VARCHAR), l.titulo FROM livros l JOIN livroautor la ON la.codigolivro = l.codigo JOIN autor a ON a.codigo = la.codigoautor WHERE l.titulo LIKE %s AND a.nome LIKE %s ORDER BY l.titulo LIMIT 10'
+		db.execute(query, (title, author))
+		return db.query(True)
 
 	def searchByYearAndEdition(self, year: int, edition: str) -> str:
-		return ''
+		db = DB()
+		query = 'SELECT CAST(l.codigo AS VARCHAR), l.titulo FROM livros l JOIN edicao e ON e.codigolivro = l.codigo WHERE e.ano = %s AND e.numero = %s ORDER BY l.titulo LIMIT 10'
+		db.execute(query, (year, edition))
+		return db.query(True)
 
-	def deleteBook(self, title: str) -> str:
-		return ''
+	def deleteBook(self, code: int) -> str:
+		db = DB()
+		query = 'DELETE FROM livroautor WHERE codigolivro = %s'
+		db.execute(query, (code, ))
+		query = 'DELETE FROM edicao WHERE codigolivro = %s'
+		db.execute(query, (code, ))
+		query = 'DELETE FROM livros WHERE codigo = %s'
+		db.execute(query, (code,))
+		return db.query()
 
-	def updateBook(self) -> str: # Rever funcionamento
-		return ''
+	def updateBook(self, author: str, title: str, number: int, year: int) -> str:
+		db = DB()
+		query = 'UPDATE edicao e SET numero = %s, ano = %s FROM livros l JOIN livroautor la ON la.codigolivro = l.codigo JOIN autor a ON a.codigo = la.codigoautor WHERE e.codigolivro = l.codigo AND a.nome LIKE %s AND l.titulo = %s'
+		db.execute(query, (number, year, author, title))
+		return db.query()
