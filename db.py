@@ -1,6 +1,5 @@
 # coding: utf-
 
-# https://pynative.com/python-postgresql-tutorial/
 import psycopg2 as pgSQL
 import json
 

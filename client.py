@@ -2,6 +2,8 @@
 
 import json
 import ast
+from socketClient import SocketClient
+from rpcClient import RpcClient
 
 class Client:
 
@@ -9,17 +11,16 @@ class Client:
 
 	def __init__(self, connectionType: str):
 		self.clientConnection = self.getClientConnection(connectionType)
-		if (self.clientConnection.getConnection() != None):
+		if (self.clientConnection.connection != None):
 			self.menu()
 
 	def getClientConnection(self, connectionType: str):
 		clientConnection = None
 
 		if (connectionType == 'socket'):
-			from socketClient import SocketClient
 			return SocketClient()
 		elif (connectionType == 'rpc'):
-			pass
+			return RpcClient()
 		else:
 			print('\nTipo de conexão inválida.\n')
 
@@ -45,23 +46,14 @@ class Client:
 			if (option != 0):
 				self.menuAction(option)
 
-		self.clientConnection.conection.close()
-
-	def inputInt(self, question: str) -> int:
-		number = -1
-
-		try:
-			number = int(input(question))
-		except ValueError:
-			print('\nDigite um número válido.')
-
-		return number
+		if (isinstance(self.clientConnection, SocketClient)):
+			self.clientConnection.connection.close()
 
 	def menuOption(self):
 		option = -1
 
 		while (option < 0) or (option > 5):
-			option = self.inputInt('Digite uma opção: ')
+			option = inputInt('Digite uma opção: ')
 
 			if (option < 0) or (option > 5):
 				print('\nDigite uma opção entre 0 e 5.\n')
@@ -80,8 +72,11 @@ class Client:
 		elif (option == 5):
 			data = self.updateBook()
 
-		self.clientConnection.getConnection().send(bytes(data, 'utf-8'))
-		response = json.loads(self.clientConnection.read())
+		if (isinstance(self.clientConnection, SocketClient)):
+			self.clientConnection.send(data)
+			response = json.loads(self.clientConnection.read())
+		else:
+			response = json.loads(self.clientConnection.send(data))
 
 		print(f'\nLinhas afetadas: {response["rowCount"]}')
 		for row in ast.literal_eval(response['data']):
@@ -92,11 +87,11 @@ class Client:
 	def createBook(self):
 		return json.dumps({
 			'action': 'createBook',
-			'code': str(self.inputInt('Digite o código do livro: ')),
+			'code': str(inputInt('Digite o código do livro: ')),
 			'title': input('Digite o título do livro: '),
-			'number': str(self.inputInt('Digite o número da edição: ')),
-			'year': str(self.inputInt('Digite o ano da edição: ')),
-			'authorCode': str(self.inputInt('Digite o código de um autor existente: '))
+			'number': str(inputInt('Digite o número da edição: ')),
+			'year': str(inputInt('Digite o ano da edição: ')),
+			'authorCode': str(inputInt('Digite o código de um autor existente: '))
 		})
 
 	def searchBook(self):
@@ -109,14 +104,14 @@ class Client:
 	def searchByYearAndEdition(self):
 		return json.dumps({
 			'action': 'searchByYearAndEdition',
-			'year': str(self.inputInt('Digite o ano da edição: ')),
-			'edition': str(self.inputInt('Digite o número da edição: '))
+			'year': str(inputInt('Digite o ano da edição: ')),
+			'edition': str(inputInt('Digite o número da edição: '))
 		})
 
 	def deleteBook(self):
 		return json.dumps({
 			'action': 'deleteBook',
-			'code': str(self.inputInt('Digite o código do livro: '))
+			'code': str(inputInt('Digite o código do livro: '))
 		})
 
 	def updateBook(self):
@@ -124,9 +119,40 @@ class Client:
 			'action': 'updateBook',
 			'author': input('Digite o nome do autor do livro: '),
 			'title': input('Digite o título do livro: '),
-			'number': str(self.inputInt('Digite o número da edição: ')),
-			'year': str(self.inputInt('Digite o ano da edição: '))
+			'number': str(inputInt('Digite o número da edição: ')),
+			'year': str(inputInt('Digite o ano da edição: '))
 		})
 
+def inputInt(question: str) -> int:
+	number = -1
+
+	try:
+		number = int(input(question))
+	except ValueError:
+		print('\nDigite um número válido.')
+
+	return number
+
 if __name__ == '__main__':
-	Client('socket')
+	try:
+		option = -1
+
+		while (option < 0) or (option > 2):
+			print('\n┌──────────────────────────────────────┐')
+			print('│      Escolha o tipo de conexão       │')
+			print('├───┬──────────────────────────────────┤')
+			print('│ 1 │ Sockets                          │')
+			print('│ 2 │ RPC                              │')
+			print('│ 0 │ Sair                             │')
+			print('└───┴──────────────────────────────────┘')
+			option = inputInt('Digite uma opção: ')
+
+			if (option < 0) or (option > 2):
+				print('\nDigite uma opção entre 1 e 2.')
+
+		if (option == 1):
+			Client('socket')
+		elif (option == 2):
+			Client('rpc')
+	except KeyboardInterrupt:
+		print('\nOperação encerrada.')

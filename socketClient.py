@@ -4,26 +4,26 @@ import socket
 
 class SocketClient():
 
-	conection = None
+	connection = None
 
 	def __init__(self):
 		try:
 			host, port = input('Digite o servidor e a porta [127.0.0.1:8888]: ').split(':')
 			self.init(host, port)
 		except:
-			print('Formato inválido utilize [127.0.0.1:8888]')
+			print('\nFormato inválido utilize: [127.0.0.1:8888]')
 
 	def init(self, host: str, port: str):
-		self.conection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+		self.connection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 		try:
-			self.conection.connect((host, int(port)))
-		except socket.error as msg:
-			print(f'\nErro ao conectar: {msg}\n')
-			self.conection = None
-
-	def getConnection(self):
-		return self.conection
+			self.connection.connect((host, int(port)))
+		except socket.error as error:
+			print(f'\nErro ao conectar: {error}\n')
+			self.connection = None
 
 	def read(self) -> str:
-		return self.conection.recv(4096).decode('utf-8')
+		return self.connection.recv(4096).decode('utf-8')
+
+	def send(self, data: str):
+		self.connection.send(bytes(data, 'utf-8'))
