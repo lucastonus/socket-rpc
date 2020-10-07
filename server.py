@@ -21,7 +21,7 @@ if __name__ == '__main__':
 			print('\n┌──────────────────────────────────────┐')
 			print('│      Escolha o tipo de conexão       │')
 			print('├───┬──────────────────────────────────┤')
-			print('│ 1 │ Sockets                          │')
+			print('│ 1 │ Socket                           │')
 			print('│ 2 │ RPC                              │')
 			print('│ 0 │ Sair                             │')
 			print('└───┴──────────────────────────────────┘')
